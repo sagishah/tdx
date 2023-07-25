@@ -14,6 +14,41 @@
 #define PORT_WRITE	1
 
 /**
+ * Assert that some IO operation involving tdg_vp_vmcall_instruction_io() was
+ * called in the guest.
+ */
+#define TDX_TEST_ASSERT_IO(VCPU, PORT, SIZE, DIR)			\
+	do {								\
+		TEST_ASSERT((VCPU)->run->exit_reason == KVM_EXIT_IO,	\
+			"Got exit_reason other than KVM_EXIT_IO: %u (%s)\n", \
+			(VCPU)->run->exit_reason,			\
+			exit_reason_str((VCPU)->run->exit_reason));	\
+									\
+		TEST_ASSERT(((VCPU)->run->exit_reason == KVM_EXIT_IO) && \
+			((VCPU)->run->io.port == (PORT)) &&		\
+			((VCPU)->run->io.size == (SIZE)) &&		\
+			((VCPU)->run->io.direction == (DIR)),		\
+			"Got unexpected IO exit values: %u (%s) %d %d %d\n", \
+			(VCPU)->run->exit_reason,			\
+			exit_reason_str((VCPU)->run->exit_reason),	\
+			(VCPU)->run->io.port, (VCPU)->run->io.size,	\
+			(VCPU)->run->io.direction);			\
+	} while (0)
+
+/**
+ * Run the tdx vcpu and check if there was some failure in the guest, either
+ * an exception like a triple fault, or if a tdx_test_fatal() was hit.
+ */
+#define TDX_RUN(VCPU)										\
+	do {													\
+		td_vcpu_run(VCPU);									\
+		if ((VCPU)->run->exit_reason == KVM_EXIT_SYSTEM_EVENT)	\
+			TEST_FAIL("Guest reported error. error code: %lld (0x%llx)\n", \
+				(VCPU)->run->system_event.data[1],			\
+				(VCPU)->run->system_event.data[1]);			\
+	} while (0)
+
+/**
  * Assert that tdx_test_success() was called in the guest.
  */
 #define TDX_TEST_ASSERT_SUCCESS(VCPU)						\
@@ -70,5 +105,13 @@ void tdx_test_fatal(uint64_t error_code);
  * is not expected to continue beyond this point.
  */
 void tdx_test_fatal_with_data(uint64_t error_code, uint64_t data_gpa);
+
+/**
+ * Assert on @error and report the @error to userspace.
+ *
+ * Return value from tdg_vp_vmcall_report_fatal_error is ignored since execution
+ * is not expected to continue beyond this point.
+ */
+void tdx_assert_error(uint64_t error);
 
 #endif // SELFTEST_TDX_TEST_UTIL_H

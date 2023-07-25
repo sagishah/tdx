@@ -41,3 +41,9 @@ void tdx_test_fatal(uint64_t error_code)
 {
 	tdx_test_fatal_with_data(error_code, 0);
 }
+
+void tdx_assert_error(uint64_t error)
+{
+	if (error)
+		tdx_test_fatal(error);
+}
