@@ -10,6 +10,7 @@
 #include "kvm_util.h"
 #include "processor.h"
 #include "sev.h"
+#include <asm/kvm.h>
 
 #ifndef NUM_INTERRUPTS
 #define NUM_INTERRUPTS 256
@@ -579,7 +580,7 @@ void sync_exception_handlers_to_guest(struct kvm_vm *vm)
 	*(vm_vaddr_t *)addr_gva2hva(vm, (vm_vaddr_t)(&exception_handlers)) = vm->handlers;
 }
 
-static void vm_init_descriptor_tables(struct kvm_vm *vm)
+void vm_init_descriptor_tables(struct kvm_vm *vm)
 {
 	extern void *idt_handlers;
 	struct kvm_segment seg;
@@ -1143,6 +1144,11 @@ void kvm_init_vm_address_properties(struct kvm_vm *vm)
 		vm->gpa_tag_mask = vm->arch.c_bit;
 	} else {
 		vm->arch.sev_fd = -1;
+	}
+
+	if (vm->type == KVM_X86_TDX_VM) {
+		vm->arch.s_bit = 1ULL << (vm->pa_bits - 1);
+		vm->gpa_tag_mask = vm->arch.s_bit;
 	}
 }
 
