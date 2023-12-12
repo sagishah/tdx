@@ -235,7 +235,6 @@ static void tdx_enable_capabilities(struct kvm_vm *vm)
 		      KVM_X2APIC_API_USE_32BIT_IDS |
 			      KVM_X2APIC_API_DISABLE_BROADCAST_QUIRK);
 	vm_enable_cap(vm, KVM_CAP_SPLIT_IRQCHIP, 24);
-	vm_enable_cap(vm, KVM_CAP_MAX_VCPUS, 512);
 }
 
 static void tdx_apply_cr4_restrictions(struct kvm_sregs *sregs)
